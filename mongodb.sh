@@ -26,7 +26,7 @@ then
 else
     echo "You are super user."
 fi
-LOGFILE
+
 cp mongo.repo /etc/yum.repos.d/mongo.repo &>> $LOGFILE
 VALIDATE $? "Copied mongo repo"
 
