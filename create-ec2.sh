@@ -4,8 +4,8 @@ instances=("mongodb" "redis" "mysql" "rabbitmq" "catalogue" "user" "cart" "shipp
 domain_name="devopswithaws.store"
 hosted_zone_id="Z01037242PFYQFQ71R7F6"
 
-for name in ${instances[@]};do
-    if [$name == "shipping" ] || [$name == "mysql" ]
+for name in ${instances[@]}; do
+    if [ $name == "shipping" ] || [ $name == "mysql" ]
     then
            instance_type="t3.medium" 
     else
@@ -26,7 +26,7 @@ for name in ${instances[@]};do
         private_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
         ip_to_use=$private_ip
     fi
-
+    echo "Creating R53 record for $name"
     aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch '
    {
   "Comment": "Creating a CNAME record for '$name'",
