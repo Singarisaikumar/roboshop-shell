@@ -32,10 +32,10 @@ fi
 dnf install maven -y &>>$LOGFILE
 VALIDATE $? "Installing Maven"
 
-id roboshop &>>$LOG_FILE
+id roboshop &>>$LOGFILE
 if [ $? -ne 0 ]
 then
-    useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOG_FILE
+    useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOGFILE
     VALIDATE $? "Creating roboshop system user"
 else
     echo -e "System user roboshop already created ... $Y SKIPPING $N"
@@ -81,13 +81,13 @@ mysql -h $$MYSQL_HOST -uroot -pRoboShop@1 -e "use cities" &>>$LOGFILE
 if [ $? -ne 0 ]
 then
     echo "Schema is ... LOADING"
-    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/schema.sql &>>$LOG_FILE
-    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/app-user.sql  &>>$LOG_FILE
-    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/master-data.sql &>>$LOG_FILE
+    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/schema.sql &>>$LOGFILE
+    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/app-user.sql  &>>$LOGFILE
+    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/master-data.sql &>>$LOGFILE
     VALIDATE $? "Loading schema"
 else
     echo -e "Data is already loaded into MySQL... $Y SKIPPING $N"
 fi
 
 systemctl restart shipping
-VALIDATE $? "Restarted Shipping" &>>$LOG_FILE
+VALIDATE $? "Restarted Shipping" &>>$LOGFILE
