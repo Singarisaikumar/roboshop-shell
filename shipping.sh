@@ -28,7 +28,6 @@ else
     echo "You are super user."
 fi
 
-
 dnf install maven -y &>>$LOGFILE
 VALIDATE $? "Installing Maven"
 
@@ -40,6 +39,9 @@ then
 else
     echo -e "System user roboshop already created ... $Y SKIPPING $N"
 fi
+
+echo "Please enter root password to setup"
+read -s MYSQL_ROOT_PASSWORD
 
 rm -rf /app &>>$LOGFILE
 VALIDATE $? "clean up existing directory"
