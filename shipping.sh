@@ -29,63 +29,65 @@ else
 fi
 
 
-dnf install maven -y &>> $LOGFILE
+dnf install maven -y &>>$LOGFILE
 VALIDATE $? "Installing Maven"
 
-id roboshop &>> $LOGFILE
+id roboshop &>>$LOG_FILE
 if [ $? -ne 0 ]
 then
-    useradd roboshop &>> $LOGFILE
-    VALIDATE $? "Adding roboshop user"
+    useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOG_FILE
+    VALIDATE $? "Creating roboshop system user"
 else
-    echo -e "roboshop user already exist...$Y SKIPPING $N"
+    echo -e "System user roboshop already created ... $Y SKIPPING $N"
 fi
 
-rm -rf /app &>> $LOGFILE
+rm -rf /app &>>$LOGFILE
 VALIDATE $? "clean up existing directory"
 
-mkdir -p /app &>> $LOGFILE
+mkdir -p /app &>>$LOGFILE
 VALIDATE $? "Creating app directory"
 
-curl -L -o /tmp/shipping.zip https://roboshop-builds.s3.amazonaws.com/shipping.zip &>> $LOGFILE
+curl -L -o /tmp/shipping.zip https://roboshop-builds.s3.amazonaws.com/shipping.zip &>>$LOGFILE
 VALIDATE $? "Downloading shipping application"
 
-cd /app  &>> $LOGFILE
+cd /app  &>>$LOGFILE
 VALIDATE $? "Moving to app directory"
 
-unzip /tmp/shipping.zip &>> $LOGFILE
+unzip /tmp/shipping.zip &>>$LOGFILE
 VALIDATE $? "Extracting shipping application"
 
-mvn clean package &>> $LOGFILE
+mvn clean package &>>$LOGFILE
 VALIDATE $? "Packaging shipping"
 
-mv target/shipping-1.0.jar shipping.jar &>> $LOGFILE
+mv target/shipping-1.0.jar shipping.jar &>>$LOGFILE
 VALIDATE $? "Renaming the artifact"
 
-cp /home/ec2-user/roboshop-shell/shipping.service /etc/systemd/system/shipping.service &>> $LOGFILE
+cp /home/ec2-user/roboshop-shell/shipping.service /etc/systemd/system/shipping.service &>>$LOGFILE
 VALIDATE $? "Copying service file"
 
-systemctl daemon-reload &>> $LOGFILE
+systemctl daemon-reload &>>$LOGFILE
 VALIDATE $? "Daemon reload"
 
-systemctl enable shipping  &>> $LOGFILE
+systemctl enable shipping  &>>$LOGFILE
 VALIDATE $? "Enabling shipping"
 
-systemctl start shipping &>> $LOGFILE
+systemctl start shipping &>>$LOGFILE
 VALIDATE $? "Starting shipping"
 
-dnf install mysql -y &>> $LOGFILE
+dnf install mysql -y &>>$LOGFILE
 VALIDATE $? "Installing MySQL"
 
-mysql -h $MYSQL_HOST -uroot -pRoboShop@1 -e "use cities" &>> $LOGFILE
+mysql -h $$MYSQL_HOST -uroot -pRoboShop@1 -e "use cities" &>>$LOGFILE
 if [ $? -ne 0 ]
 then
     echo "Schema is ... LOADING"
-    mysql -h $MYSQL_HOST -uroot -pRoboShop@1 < /app/schema/shipping.sql &>> $LOGFILE
+    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/schema.sql &>>$LOG_FILE
+    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/app-user.sql  &>>$LOG_FILE
+    mysql -h $MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/master-data.sql &>>$LOG_FILE
     VALIDATE $? "Loading schema"
 else
-    echo -e "Schema already exists... $Y SKIPPING $N"
+    echo -e "Data is already loaded into MySQL... $Y SKIPPING $N"
 fi
 
 systemctl restart shipping
-VALIDATE $? "Restarted Shipping"
+VALIDATE $? "Restarted Shipping" &>>$LOG_FILE
