@@ -1,46 +1,85 @@
 #!bin/bash
 
-instances=("mongodb" "redis" "mysql" "rabbitmq" "catalogue" "user" "cart" "shipping" "payment" "web")
-domain_name="devopswithaws.store"
-hosted_zone_id="Z01037242PFYQFQ71R7F6"
+AMI_ID="ami-09c813fb71547fc4f"
+SG_ID="sg-06507cfe4e2b0eaf2" # replace with your SG ID
+INSTANCES=("mongodb" "redis" "mysql" "rabbitmq" "catalogue" "user" "cart" "shipping" "payment" "dispatch" "frontend")
+ZONE_ID="Z01037242PFYQFQ71R7F6" # replace with your ZONE ID
+DOMAIN_NAME="devopswithaws.store" # replace with your domain
 
-for name in ${instances[@]}; do
-    if [ $name == "shipping" ] || [ $name == "mysql" ]
+#for instance in ${INSTANCES[@]}
+for instance in $@
+do
+    INSTANCE_ID=$(aws ec2 run-instances --image-id ami-09c813fb71547fc4f --instance-type t3.micro --security-group-ids sg-06507cfe4e2b0eaf2 --tag-specifications "ResourceType=instance,Tags=[{Key=Name, Value=$instance}]" --query "Instances[0].InstanceId" --output text)
+    if [ $instance != "frontend" ]
     then
-           instance_type="t3.medium" 
+        IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[0].Instances[0].PrivateIpAddress" --output text)
+        RECORD_NAME="$instance.$DOMAIN_NAME"
     else
-           instance_type="t3.micro"
+        IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+        RECORD_NAME="$DOMAIN_NAME"
     fi
-    echo "Creating instances for: $name with instance type: $instance_type"
-    instance_id=$(aws ec2 run-instances  --image-id ami-09c813fb71547fc4f --instance-type $instance_type --security-group-ids sg-06507cfe4e2b0eaf2 --subnet-id subnet-0da0bf269651525a1 --query 'Instances[0].InstanceId' --output text)
-    echo "Instance created for: $name"
+    echo "$instance IP address: $IP"
 
-    aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=$name
-    
-    if [ $name == "web" ]
-    then
-        aws ec2 wait instance-running --instance-ids $instance_id
-        public_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-        ip_to_use=$public_ip
-    else
-        private_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
-        ip_to_use=$private_ip
-    fi
-    echo "Creating R53 record for $name"
-    aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch '
-   {
-  "Comment": "Creating a CNAME record for '$name'",
-  "Changes": [{
-      "Action"           : "UPSERT",
-      "ResourceRecordSet": {
-        "Name"           : "'$name.$domain_name'",
-        "Type"           : "A",
-        "TTL"            : 1,
-        "ResourceRecords": [
-          {
-            "Value"      : "'$ip_to_use'"
-          }]
+    aws route53 change-resource-record-sets \
+    --hosted-zone-id $ZONE_ID \
+    --change-batch '
+    {
+        "Comment": "Creating or Updating a record set for cognito endpoint"
+        ,"Changes": [{
+        "Action"              : "UPSERT"
+        ,"ResourceRecordSet"  : {
+            "Name"              : "'$RECORD_NAME'"
+            ,"Type"             : "A"
+            ,"TTL"              : 1
+            ,"ResourceRecords"  : [{
+                "Value"         : "'$IP'"
+            }]
         }
-       }]
+        }]
     }'
 done
+
+# instances=("mongodb" "redis" "mysql" "rabbitmq" "catalogue" "user" "cart" "shipping" "payment" "web")
+# domain_name="devopswithaws.store"
+# hosted_zone_id="Z01037242PFYQFQ71R7F6"
+
+# for name in ${instances[@]}; do
+#     if [ $name == "shipping" ] || [ $name == "mysql" ]
+#     then
+#            instance_type="t3.medium" 
+#     else
+#            instance_type="t3.micro"
+#     fi
+#     echo "Creating instances for: $name with instance type: $instance_type"
+#     instance_id=$(aws ec2 run-instances  --image-id ami-09c813fb71547fc4f --instance-type $instance_type --security-group-ids sg-06507cfe4e2b0eaf2 --subnet-id subnet-0da0bf269651525a1 --query 'Instances[0].InstanceId' --output text)
+#     echo "Instance created for: $name"
+
+#     aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=$name
+    
+#     if [ $name == "web" ]
+#     then
+#         aws ec2 wait instance-running --instance-ids $instance_id
+#         public_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+#         ip_to_use=$public_ip
+#     else
+#         private_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
+#         ip_to_use=$private_ip
+#     fi
+#     echo "Creating R53 record for $name"
+#     aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch '
+#    {
+#   "Comment": "Creating a CNAME record for '$name'",
+#   "Changes": [{
+#       "Action"           : "UPSERT",
+#       "ResourceRecordSet": {
+#         "Name"           : "'$name.$domain_name'",
+#         "Type"           : "A",
+#         "TTL"            : 1,
+#         "ResourceRecords": [
+#           {
+#             "Value"      : "'$ip_to_use'"
+#           }]
+#         }
+#        }]
+#     }'
+# done
