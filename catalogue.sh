@@ -52,7 +52,7 @@ VALIDATE $? "clean up existing directory"
 mkdir -p /app &>> $LOGFILE
 VALIDATE $? "Creating app directory"
 
-curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip &>>$LOG_FILE
+curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip &>>$LOGFILE
 VALIDATE $? "Downloading Catalogue"
 
 cd /app  &>> $LOGFILE
