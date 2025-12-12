@@ -79,7 +79,7 @@ VALIDATE $? "Starting shipping"
 dnf install mysql -y &>>$LOGFILE
 VALIDATE $? "Installing MySQL"
 
-mysql -h $$MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "use cities" &>>$LOGFILE
+mysql -h $$MYSQL_HOST -uroot -p$MYSQL_ROOT_PASSWORD  -e "use cities" &>>$LOGFILE
 if [ $? -ne 0 ]
 then
     echo "Schema is ... LOADING"
