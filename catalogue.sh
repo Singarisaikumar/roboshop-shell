@@ -52,8 +52,8 @@ VALIDATE $? "clean up existing directory"
 mkdir -p /app &>> $LOGFILE
 VALIDATE $? "Creating app directory"
 
-curl -o /tmp/catalogue.zip https://roboshop-builds.s3.amazonaws.com/catalogue.zip &>> $LOGFILE
-VALIDATE $? "downloading catalogue application"
+curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip &>>$LOG_FILE
+VALIDATE $? "Downloading Catalogue"
 
 cd /app  &>> $LOGFILE
 VALIDATE $? "Moving to app directory"
@@ -86,7 +86,7 @@ SCHEMA_EXISTS=$(mongosh --host $MONGO_HOST --quiet --eval "db.getMongo().getDBNa
 if [ $SCHEMA_EXISTS -lt 0 ]
 then
     echo "Schema does not exists ... LOADING"
-    mongosh --host $MONGO_HOST </app/schema/catalogue.js &>> $LOGFILE
+    mongosh --host $MONGO_HOST </app/db/master-data.js &>> $LOGFILE
     VALIDATE $? "Loading catalogue data"
 else
     echo -e "schema already exists... $Y SKIPPING $N"
